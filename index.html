@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScalpVault Master Journal & Mindset</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    <script>
+        const manifest = {
+            "name": "ScalpVault Master Journal",
+            "short_name": "ScalpVault",
+            "start_url": "./trading_journal.html",
+            "display": "standalone",
+            "background_color": "#0f172a",
+            "theme_color": "#38bdf8",
+            "icons": [
+                {
+                    "src": "logo.png",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        };
+        const stringManifest = JSON.stringify(manifest);
+        const blob = new Blob([stringManifest], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(blob);
+        const metaManifest = document.createElement('link');
+        metaManifest.rel = 'manifest';
+        metaManifest.href = manifestURL;
+        document.head.appendChild(metaManifest);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        h1, h2, h3 { margin: 0; }
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: var(--card-bg);
+            color: var(--text-muted);
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--accent);
+            color: #0f172a;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        @media(max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: var(--text);
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        button.btn-primary {
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 12px 20px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button.btn-primary:hover { opacity: 0.9; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-card h4 { color: var(--text-muted); margin-bottom: 8px; }
+        .stat-card .value { font-size: 1.8rem; font-weight: bold; }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .badge-a-plus { background: #84cc16; color: #000; }
+        .badge-a { background: #38bdf8; color: #000; }
+        .badge-b { background: #f59e0b; color: #000; }
+        .badge-c { background: #ef4444; color: #fff; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+            font-size: 0.9rem;
+        }
+        th { color: var(--text-muted); }
+        .backup-btns {
+            display: flex;
+            gap: 10px;
+        }
+        .backup-btns button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background: var(--card-bg);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .breakdown-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media(max-width: 768px) { .breakdown-grid { grid-template-columns: 1fr; } }
+        .breakdown-item {
+            background: #0f172a;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #334155;
+        }
+        .checklist-box {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+        .checklist-box label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text);
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .checklist-box label:last-child { margin-bottom: 0; }
+        .checklist-box input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+        .affirmation-box {
+            background: rgba(56, 189, 248, 0.05);
+            border-left: 4px solid var(--accent);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+        }
+        .affirmation-box h4 { color: var(--accent); margin-bottom: 5px; }
+        .affirmation-box p { margin: 5px 0; font-size: 0.95rem; }
+        .affirmation-box blockquote { color: var(--text-muted); font-style: italic; margin: 5px 0 0 0; font-size: 0.85rem; }
+        .calendar-container {
+            margin-top: 20px;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .cal-header {
+            text-align: center;
+            font-weight: bold;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 5px;
+        }
+        .cal-day {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            min-height: 80px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .cal-day.empty {
+            background: transparent;
+            border: none;
+        }
+        .cal-date-num {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .cal-day-content {
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        .cal-win { background: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid var(--success); }
+        .cal-loss { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .cal-be { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .modal-content {
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2rem;
+            color: #fff;
+            cursor: pointer;
+        }
+        .modal-thumbs {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-thumb {
+            width: 80px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .modal-thumb.active { border-color: var(--accent); }
+        
+        /* SESSION SHUTDOWN BANNER */
+        .shutdown-banner {
+            background: linear-gradient(135deg, #7f1d1d, #450a0a);
+            border: 2px solid var(--danger);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .shutdown-banner.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>⚡ ScalpVault Master Journal</h1>
+        <div class="backup-btns">
+            <button onclick="exportData()">Export Backup</button>
+            <button onclick="document.getElementById('importFile').click()">Import</button>
+            <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+        </div>
+    </header>
+
+    <!-- SESSION SHUTDOWN BANNER -->
+    <div id="shutdownBanner" class="shutdown-banner">
+        <h2 style="color: #fca5a5; margin-bottom: 8px;">🚨 SESSION SHUTDOWN ACTIVATED</h2>
+        <p id="shutdownReason" style="color: #fecaca; margin-bottom: 15px; font-size: 0.95rem;">Nakapagtala ka na ng trade para sa session na ito. Sarado na ang trading form para maiwasan ang force trade at emosyonal na desisyon.</p>
+        <button onclick="resetSessionShutdown()" style="background: var(--danger); color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Override / Start New Session</button>
+    </div>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab(event, 'mindsetTab')">🙏 Mindset & Pre-Trading</button>
+        <button class="tab-btn" onclick="switchTab(event, 'logTab')">New Trade / Log</button>
+        <button class="tab-btn" onclick="switchTab(event, 'analyticsTab')">Analytics & Winrates</button>
+        <button class="tab-btn" onclick="switchTab(event, 'historyTab')">Trade History</button>
+    </div>
+
+    <!-- TAB 0: MINDSET & PRE-TRADING -->
+    <div id="mindsetTab" class="tab-content active">
+        <div class="card" style="border: 2px solid var(--accent);">
+            <h2>🔥 Pre-Trading Declaration</h2>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 15px;">Basahin at i-tsek ito bago buksan ang iyong mga tsart.</p>
+            <div class="checklist-box" style="margin-bottom: 20px;">
+                <label><input type="checkbox"> Today, I choose discipline over emotion.</label>
+                <label><input type="checkbox"> I will wait patiently for my A+ setup.</label>
+                <label><input type="checkbox"> I will not chase price or force a trade.</label>
+                <label><input type="checkbox"> I will not revenge trade after a loss.</label>
+                <label><input type="checkbox"> I will respect my risk management and daily loss limit.</label>
+                <label><input type="checkbox"> I will accept that losses are part of trading.</label>
+                <label><input type="checkbox"> I will not compromise my rules because of greed or fear.</label>
+                <label><input type="checkbox"> If there is no confirmation, there is no trade.</label>
+                <label><input type="checkbox"> I am responsible for my execution, not the market's outcome.</label>
+                <label><input type="checkbox"> I will be a faithful steward of what God has entrusted to me.</label>
+            </div>
+            <div style="text-align: center; padding: 10px; background: #0f172a; border-radius: 8px; border: 1px solid var(--accent);">
+                <strong style="color: var(--accent); font-size: 1.1rem;">GOD FIRST. PROCESS FIRST. PROFIT SECOND.</strong>
+            </div>
+        </div>
+        <div class="card">
+            <h2>⚔️ My 5 Golden Rules</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 15px;">
+                <div style="background:#0f172a; padding:12px; border-radius:8px; border:1px solid #334155;">
+                    <strong style="color:var(--accent);">1. Wait</strong><br><span style="font-size:0.85rem; color:var(--text-muted);">No setup, no trade.</span>
+                </div>
+                <div style="background:#0f172a; padding:12px; border-radius:8px; border:1px solid #334155;">
+                    <strong style="color:var(--accent);">2. Confirm</strong><br><span style="font-size:0.85rem; color:var(--text-muted);">No Candle Closure, no trade.</span>
+                </div>
+                <div style="background:#0f172a; padding:12px; border-radius:8px; border:1px solid #334155;">
+                    <strong style="color:var(--accent);">3. Protect</strong><br><span style="font-size:0.85rem; color:var(--text-muted);">Respect daily loss limit.</span>
+                </div>
+                <div style="background:#0f172a; padding:12px; border-radius:8px; border:1px solid #334155;">
+                    <strong style="color:var(--accent);">4. Control</strong><br><span style="font-size:0.85rem; color:var(--text-muted);">No revenge trading.</span>
+                </div>
+                <div style="background:#0f172a; padding:12px; border-radius:8px; border:1px solid #334155;">
+                    <strong style="color:var(--accent);">5. Stop</strong><br><span style="font-size:0.85rem; color:var(--text-muted);">One good trade is enough.</span>
+                </div>
+            </div>
+            <div style="margin-top: 15px; padding: 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid var(--warning); border-radius: 8px;">
+                <p style="margin:0; font-size: 0.9rem; color: var(--warning);"><strong>Psychology Anchor (Proverbs 25:28 KJV):</strong> <em>"He that hath no rule over his own spirit is like a city that is broken down, and without walls."</em></p>
+            </div>
+        </div>
+        <div class="card">
+            <h2>📖 Biblical Trading Affirmations</h2>
+            <p style="color:var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">The goal is not just to become a profitable trader but to become a disciplined steward of what God has entrusted to you.</p>
+            <div class="affirmation-box">
+                <h4>1. PATIENCE – Wait for God's Timing</h4>
+                <p>• "I don't chase the market; I wait for my opportunity." <blockquote>Ecclesiastes 3:1 – To everything there is a season.</blockquote></p>
+                <p>• "Not every movement deserves my participation." <blockquote>Proverbs 19:2 – Haste leads to mistakes.</blockquote></p>
+                <p>• "I would rather miss a trade than force a bad one." <blockquote>Psalm 37:7 – Be still before the Lord and wait patiently.</blockquote></p>
+            </div>
+            <div class="affirmation-box">
+                <h4>2. DISCIPLINE – Follow the Plan</h4>
+                <p>• "I trade my plan, not my feelings." <blockquote>1 Corinthians 14:40 – Let everything be done decently and in order.</blockquote></p>
+                <p>• "No confirmation, no execution." <blockquote>Proverbs 21:5 – The plans of the diligent lead to profit.</blockquote></p>
+                <p>• "I don't need to trade every day; I need to trade correctly." <blockquote>Proverbs 16:3 – Commit your work to the Lord.</blockquote></p>
+            </div>
+            <div class="affirmation-box">
+                <h4>3. RISK MANAGEMENT – Protect Your Capital</h4>
+                <p>• "Protecting my capital is more important than chasing profit." <blockquote>Luke 16:10 – Whoever is faithful in little is faithful in much.</blockquote></p>
+                <p>• "I accept my risk before I enter the market." <blockquote>Luke 14:28 – Count the cost before building.</blockquote></p>
+                <p>• "I will never risk tomorrow's opportunity for today's greed." <blockquote>Proverbs 22:3 – The prudent see danger and take refuge.</blockquote></p>
+            </div>
+            <div class="affirmation-box">
+                <h4>4. TRADING PSYCHOLOGY – Control Your Emotions</h4>
+                <p>• "I will not trade out of fear, greed, or revenge." <blockquote>2 Timothy 1:7 – God gave us a spirit of power, love, and self-control.</blockquote></p>
+                <p>• "A missed trade is not a missed opportunity forever." <blockquote>Philippians 4:11 – Learn to be content in every situation.</blockquote></p>
+                <p>• "My peace is more valuable than any profit." <blockquote>Philippians 4:6-7 – Let the peace of God guard your heart and mind.</blockquote></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 1: LOG & CHECKLIST -->
+    <div id="logTab" class="tab-content">
+        <div class="card" id="tradeFormCard">
+            <h2>Daily Pre-Session & Multi-Timeframe Strategy Checklist</h2>
+            <form id="tradeForm" onsubmit="saveTrade(event)">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Date & Time</label>
+                        <input type="datetime-local" id="tradeDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Pair / Index</label>
+                        <input type="text" id="symbol" placeholder="e.g., NASDAQ / GER40" required>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Session</label>
+                        <select id="session" onchange="checkSessionShutdown()">
+                            <option value="London">London</option>
+                            <option value="New York">New York</option>
+                            <option value="Asian">Asian</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Trade Result</label>
+                        <select id="result">
+                            <option value="WIN">WIN (+)</option>
+                            <option value="LOSS">LOSS (-)</option>
+                            <option value="BE">Break-Even (Scratch)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Risk-to-Reward (RR)</label>
+                        <input type="text" id="rrValue" placeholder="e.g., 1:2.5 or 2.5" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Screenshots (Up to 3 images)</label>
+                        <input type="file" id="screenshotsInput" accept="image/*" multiple>
+                    </div>
+                </div>
+                <hr style="border-color: #334155; margin: 20px 0;">
+                <h3>Strategy Rule Execution Checklist</h3>
+                <p style="color:var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">Suriin ang mga pamantayan. Kusang magbabago ang Setup Rating batay sa mga nakumpleto mo.</p>
+                <div class="form-group checklist-box">
+                    <label><input type="checkbox" id="chk1" class="rating-chk"> 1. Na-identify ang malinaw na <strong>Bias</strong></label>
+                    <label><input type="checkbox" id="chk2" class="rating-chk"> 2. Presensya ng <strong>4H POI & Relevant Levels</strong></label>
+                    <label><input type="checkbox" id="chk3" class="rating-chk"> 3. May <strong>1H / 30m Engulfing Signature</strong> sa POI</label>
+                    <label><input type="checkbox" id="chk4" class="rating-chk"> 4. Pumasok sa <strong>5m / 3m Continuation Entry</strong> (15m pagka-close ng 1H/30m candle)</label>
+                </div>
+                <div class="form-group">
+                    <label><strong>Calculated Setup Rating: <span id="ratingDisplay" class="badge badge-a-plus">A+</span></strong></label>
+                </div>
+                <div class="form-group">
+                    <label>Psychology & Session Notes</label>
+                    <textarea id="notes" rows="3" placeholder="Anong naramdaman habang nagba-baba ng desisyon? Paano hinawakan ang 15m wait pagkatapos ng candle closure..."></textarea>
+                </div>
+                <button type="submit" id="submitBtn" class="btn-primary">Save Trade to Journal</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TAB 2: ANALYTICS -->
+    <div id="analyticsTab" class="tab-content">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h4>Total Trades</h4>
+                <div class="value" id="statTotal">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Overall Win Rate</h4>
+                <div class="value" id="statWinRate">0%</div>
+            </div>
+            <div class="stat-card">
+                <h4>Wins / Losses / BE</h4>
+                <div class="value" id="statWLB" style="font-size: 1.2rem;">0 / 0 / 0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Total RR Earned</h4>
+                <div class="value" id="statTotalRR" style="color: var(--accent);">0R</div>
+            </div>
+        </div>
+        <div class="breakdown-grid">
+            <div class="card">
+                <h3>Win Rate by Session</h3>
+                <div id="sessionBreakdownList" style="margin-top: 15px;"></div>
+            </div>
+            <div class="card">
+                <h3>Win Rate by Day (Mon - Fri)</h3>
+                <div id="dayBreakdownList" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Equity Growth Curve</h3>
+            <canvas id="equityCurveChart" style="max-height: 250px;"></canvas>
+        </div>
+        <div class="card calendar-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 id="calMonthTitle">Monthly PnL Calendar</h3>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="changeMonth(-1)" style="background:#0f172a; border:1px solid #334155; color:var(--text); padding:5px 12px; border-radius:6px; cursor:pointer;">&lt; Prev</button>
+                    <button onclick="changeMonth(1)" style="background:#0f172a; border:1px solid #334155; color:var(--text); padding:5px 12px; border-radius:6px; cursor:pointer;">Next &gt;</button>
+                </div>
+            </div>
+            <div class="calendar-grid">
+                <div class="cal-header">Sun</div>
+                <div class="cal-header">Mon</div>
+                <div class="cal-header">Tue</div>
+                <div class="cal-header">Wed</div>
+                <div class="cal-header">Thu</div>
+                <div class="cal-header">Fri</div>
+                <div class="cal-header">Sat</div>
+            </div>
+            <div class="calendar-grid" id="calendarDaysGrid"></div>
+        </div>
+    </div>
+
+    <!-- TAB 3: HISTORY -->
+    <div id="historyTab" class="tab-content">
+        <div class="card">
+            <h3>Logged Trades History</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Pair</th>
+                            <th>Session</th>
+                            <th>Result</th>
+                            <th>RR</th>
+                            <th>Rating</th>
+                            <th>Notes</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="imageModal" class="modal">
+    <span class="modal-close" onclick="closeModal()">&times;</span>
+    <img class="modal-content" id="modalMainImg">
+    <div class="modal-thumbs" id="modalThumbsContainer"></div>
+</div>
+
+<script>
+    document.getElementById('tradeDate').value = new Date().toISOString().slice(0,16);
+    let trades = [];
+    try {
+        let rawData = localStorage.getItem('scalp_trades');
+        if (rawData) trades = JSON.parse(rawData);
+    } catch (e) {
+        trades = [];
+    }
+
+    function switchTab(evt, tabName) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabName).classList.add('active');
+        evt.currentTarget.classList.add('active');
+        if(tabName === 'analyticsTab') {
+            updateAnalytics();
+            renderCalendar();
+        }
+    }
+
+    const checkboxes = document.querySelectorAll('.rating-chk');
+    checkboxes.forEach(chk => chk.addEventListener('change', calculateRating));
+
+    function calculateRating() {
+        let checkedCount = document.querySelectorAll('.rating-chk:checked').length;
+        let display = document.getElementById('ratingDisplay');
+        if(checkedCount === 4) {
+            display.className = "badge badge-a-plus"; display.innerText = "A+ Setup";
+        } else if(checkedCount === 3) {
+            display.className = "badge badge-a"; display.innerText = "A Setup";
+        } else if(checkedCount === 2) {
+            display.className = "badge badge-b"; display.innerText = "B Setup";
+        } else {
+            display.className = "badge badge-c"; display.innerText = "C (Subpar)";
+        }
+    }
+    calculateRating();
+
+    // SESSION SHUTDOWN CHECKER
+    function checkSessionShutdown() {
+        const selectedSession = document.getElementById('session').value;
+        const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        
+        // Check if there is already a WIN or LOSS for this session on the current calendar day
+        const recordedSessionToday = trades.find(t => {
+            const tDate = t.date.split('T')[0];
+            return tDate === todayStr && t.session === selectedSession && (t.result === 'WIN' || t.result === 'LOSS');
+        });
+
+        const banner = document.getElementById('shutdownBanner');
+        const reason = document.getElementById('shutdownReason');
+        const formElements = document.querySelectorAll('#tradeForm input, #tradeForm select, #tradeForm textarea, #submitBtn');
+
+        if (recordedSessionToday) {
+            banner.classList.add('active');
+            reason.innerText = `Mayroon ka nang naitalang ${recordedSessionToday.result} sa ${selectedSession} session ngayong araw (${todayStr}). Sarado na ang form na ito laban sa force trade.`;
+            formElements.forEach(el => {
+                if(el.id !== 'session') el.disabled = true;
+            });
+            document.getElementById('submitBtn').style.opacity = '0.5';
+        } else {
+            banner.classList.remove('active');
+            formElements.forEach(el => el.disabled = false);
+            document.getElementById('submitBtn').style.opacity = '1';
+        }
+    }
+
+    function resetSessionShutdown() {
+        if(confirm('Sigurado ka bang nais mong i-override ang Shutdown at mag-log ng isa pang trade sa session na ito?')) {
+            document.getElementById('shutdownBanner').classList.remove('active');
+            const formElements = document.querySelectorAll('#tradeForm input, #tradeForm select, #tradeForm textarea, #submitBtn');
+            formElements.forEach(el => el.disabled = false);
+            document.getElementById('submitBtn').style.opacity = '1';
+        }
+    }
+
+    // Run check on load and when session changes
+    document.addEventListener('DOMContentLoaded', () => {
+        checkSessionShutdown();
+    });
+    document.getElementById('session').addEventListener('change', checkSessionShutdown);
+
+    function saveTrade(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('screenshotsInput');
+        const files = fileInput.files;
+        if (files && files.length > 0) {
+            let screenshotsArray = [];
+            const limit = Math.min(files.length, 3);
+            let filesLoaded = 0;
+            for (let i = 0; i < limit; i++) {
+                const reader = new FileReader();
+                reader.onload = (function(fileIndex) {
+                    return function(uploadEvent) {
+                        screenshotsArray[fileIndex] = uploadEvent.target.result;
+                        filesLoaded++;
+                        if (filesLoaded === limit) finishSavingTrade(screenshotsArray);
+                    };
+                })(i);
+                reader.readAsDataURL(files[i]);
+            }
+        } else {
+            finishSavingTrade([]);
+        }
+    }
+
+    function finishSavingTrade(screenshotsArray) {
+        const ratingText = document.getElementById('ratingDisplay').innerText;
+        let rrInput = document.getElementById('rrValue').value.trim();
+        let cleanRR = rrInput.includes(':') ? parseFloat(rrInput.split(':')[1]) : parseFloat(rrInput);
+        if(isNaN(cleanRR)) cleanRR = 1.0;
+        const newTrade = {
+            id: Date.now(),
+            date: document.getElementById('tradeDate').value,
+            symbol: document.getElementById('symbol').value.toUpperCase(),
+            session: document.getElementById('session').value,
+            result: document.getElementById('result').value,
+            rr: cleanRR,
+            rating: ratingText,
+            notes: document.getElementById('notes').value,
+            screenshots: screenshotsArray
+        };
+        trades.unshift(newTrade);
+        try {
+            localStorage.setItem('scalp_trades', JSON.stringify(trades));
+            alert('Trade successfully saved! Session Shutdown activated.');
+            document.getElementById('tradeForm').reset();
+            document.getElementById('tradeDate').value = new Date().toISOString().slice(0,16);
+            document.querySelectorAll('.rating-chk').forEach(c => c.checked = false);
+            calculateRating();
+            renderHistory();
+            checkSessionShutdown();
+        } catch (err) {
+            alert('Error saving data: Masyadong malaki ang screenshots.');
+        }
+    }
+
+    function renderHistory() {
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = '';
+        let sortedTrades = [...trades].sort((a, b) => new Date(b.date) - new Date(a.date));
+        if(sortedTrades.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted)">Walang pang trade na naka-log.</td></tr>`;
+            return;
+        }
+        sortedTrades.forEach(t => {
+            let badgeClass = 'badge-a';
+            if(t.rating.includes('A+')) badgeClass = 'badge-a-plus';
+            else if(t.rating.includes('B')) badgeClass = 'badge-b';
+            else if(t.rating.includes('C')) badgeClass = 'badge-c';
+            let resultColor = t.result === 'WIN' ? 'var(--success)' : (t.result === 'LOSS' ? 'var(--danger)' : 'var(--warning)');
+            let rrDisplay = t.result === 'WIN' ? `+${t.rr}R` : (t.result === 'LOSS' ? `-${t.rr}R` : `0R`);
+            let ssList = t.screenshots || (t.screenshot ? [t.screenshot] : []);
+            let ssAction = ssList.length > 0 ? `<a href="#" onclick='openModal(${JSON.stringify(ssList)}); return false;' style="color:var(--accent);">View SS (${ssList.length})</a> | ` : '';
+            let deleteBtn = `<button onclick="deleteTrade(${t.id})" style="background:none; border:none; color:var(--danger); cursor:pointer;">Delete</button>`;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${t.date.replace('T', ' ')}</td>
+                <td><strong>${t.symbol}</strong></td>
+                <td>${t.session}</td>
+                <td><span style="color:${resultColor}; font-weight:bold;">${t.result}</span></td>
+                <td><span style="color:var(--accent);">${rrDisplay}</span></td>
+                <td><span class="badge ${badgeClass}">${t.rating}</span></td>
+                <td>${t.notes ? t.notes.substring(0, 30) + '...' : ''}</td>
+                <td>${ssAction} ${deleteBtn}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    renderHistory();
+
+    function deleteTrade(id) {
+        if(confirm('Burahin ang trade na ito?')) {
+            trades = trades.filter(t => t.id !== id);
+            localStorage.setItem('scalp_trades', JSON.stringify(trades));
+            renderHistory();
+            checkSessionShutdown();
+        }
+    }
+
+    function openModal(images) {
+        const modal = document.getElementById('imageModal');
+        const mainImg = document.getElementById('modalMainImg');
+        const thumbsContainer = document.getElementById('modalThumbsContainer');
+        thumbsContainer.innerHTML = '';
+        modal.style.display = 'flex';
+        if(images.length > 0) mainImg.src = images[0];
+        images.forEach((imgSrc, index) => {
+            const thumb = document.createElement('img');
+            thumb.src = imgSrc;
+            thumb.className = 'modal-thumb' + (index === 0 ? ' active' : '');
+            thumb.onclick = function() {
+                mainImg.src = imgSrc;
+                document.querySelectorAll('.modal-thumb').forEach(th => th.classList.remove('active'));
+                thumb.classList.add('active');
+            };
+            thumbsContainer.appendChild(thumb);
+        });
+    }
+
+    function closeModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+
+    let equityChartInstance = null;
+    function updateAnalytics() {
+        const total = trades.length;
+        const wins = trades.filter(t => t.result === 'WIN').length;
+        const losses = trades.filter(t => t.result === 'LOSS').length;
+        const bes = trades.filter(t => t.result === 'BE').length;
+        const decisiveTrades = wins + losses;
+        const winRate = decisiveTrades > 0 ? ((wins / decisiveTrades) * 100).toFixed(1) : 0;
+        let totalRR = 0;
+        trades.forEach(t => {
+            if(t.result === 'WIN') totalRR += t.rr;
+            else if(t.result === 'LOSS') totalRR -= t.rr;
+        });
+        document.getElementById('statTotal').innerText = total;
+        document.getElementById('statWinRate').innerText = winRate + '%';
+        document.getElementById('statWLB').innerText = `${wins}W / ${losses}L / ${bes}BE`;
+        let rrElement = document.getElementById('statTotalRR');
+        rrElement.innerText = (totalRR >= 0 ? '+' : '') + totalRR.toFixed(1) + 'R';
+        rrElement.style.color = totalRR >= 0 ? 'var(--success)' : 'var(--danger)';
+        let sessions = ['London', 'New York', 'Asian'];
+        let sessionContainer = document.getElementById('sessionBreakdownList');
+        sessionContainer.innerHTML = '';
+        sessions.forEach(sess => {
+            let sessTrades = trades.filter(t => t.session === sess);
+            let sWins = sessTrades.filter(t => t.result === 'WIN').length;
+            let sLosses = sessTrades.filter(t => t.result === 'LOSS').length;
+            let sDecisive = sWins + sLosses;
+            let sRate = sDecisive > 0 ? ((sWins / sDecisive) * 100).toFixed(1) : 0;
+            sessionContainer.innerHTML += `
+                <div class="breakdown-item">
+                    <span><strong>${sess}</strong> (${sDecisive} trades)</span>
+                    <span style="color:var(--accent); font-weight:bold;">${sRate}% (${sWins}W / ${sLosses}L)</span>
+                </div>
+            `;
+        });
+        let daysList = [
+            { id: 1, name: 'Monday' },
+            { id: 2, name: 'Tuesday' },
+            { id: 3, name: 'Wednesday' },
+            { id: 4, name: 'Thursday' },
+            { id: 5, name: 'Friday' }
+        ];
+        let dayContainer = document.getElementById('dayBreakdownList');
+        dayContainer.innerHTML = '';
+        daysList.forEach(day => {
+            let dayTrades = trades.filter(t => new Date(t.date).getDay() === day.id);
+            let dWins = dayTrades.filter(t => t.result === 'WIN').length;
+            let dLosses = dayTrades.filter(t => t.result === 'LOSS').length;
+            let dDecisive = dWins + dLosses;
+            let dRate = dDecisive > 0 ? ((dWins / dDecisive) * 100).toFixed(1) : 0;
+            dayContainer.innerHTML += `
+                <div class="breakdown-item">
+                    <span><strong>${day.name}</strong> (${dDecisive} trades)</span>
+                    <span style="color:var(--accent); font-weight:bold;">${dRate}% (${dWins}W / ${dLosses}L)</span>
+                </div>
+            `;
+        });
+        let chronologicalTrades = [...trades].sort((a, b) => new Date(a.date) - new Date(b.date));
+        let cumulativeRR = 0;
+        let equityLabels = ['Start'];
+        let equityDataPoints = [0];
+        chronologicalTrades.forEach((t, idx) => {
+            if(t.result === 'WIN') cumulativeRR += t.rr;
+            else if(t.result === 'LOSS') cumulativeRR -= t.rr;
+            equityLabels.push(`Trade ${idx+1} (${t.symbol})`);
+            equityDataPoints.push(cumulativeRR);
+        });
+        const ctxEquity = document.getElementById('equityCurveChart').getContext('2d');
+        if(equityChartInstance) equityChartInstance.destroy();
+        equityChartInstance = new Chart(ctxEquity, {
+            type: 'line',
+            data: {
+                labels: equityLabels,
+                datasets: [{
+                    label: 'Account Equity (Cumulative R)',
+                    data: equityDataPoints,
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                    y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                }
+            }
+        });
+    }
+    let currentCalendarDate = new Date();
+    function changeMonth(direction) {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+        renderCalendar();
+    }
+    function renderCalendar() {
+        const year = currentCalendarDate.getFullYear();
+        const month = currentCalendarDate.getMonth();
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        document.getElementById('calMonthTitle').innerText = `Monthly PnL Calendar - ${monthNames[month]} ${year}`;
+        const grid = document.getElementById('calendarDaysGrid');
+        grid.innerHTML = '';
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const totalDays = new Date(year, month + 1, 0).getDate();
+        let dailyData = {};
+        trades.forEach(t => {
+            let tDateStr = t.date.split('T')[0];
+            if(!dailyData[tDateStr]) {
+                dailyData[tDateStr] = { rr: 0, result: 'BE', count: 0 };
+            }
+            dailyData[tDateStr].count++;
+            if(t.result === 'WIN') {
+                dailyData[tDateStr].rr += t.rr;
+                dailyData[tDateStr].result = 'WIN';
+            } else if(t.result === 'LOSS') {
+                dailyData[tDateStr].rr -= t.rr;
+                if(dailyData[tDateStr].result !== 'WIN') dailyData[tDateStr].result = 'LOSS';
+            }
+        });
+        for(let i = 0; i < firstDayIndex; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'cal-day empty';
+            grid.appendChild(emptyCell);
+        }
+        for(let day = 1; day <= totalDays; day++) {
+            const dayCell = document.createElement('div');
+            dayCell.className = 'cal-day';
+            let monthStr = String(month + 1).padStart(2, '0');
+            let dayStr = String(day).padStart(2, '0');
+            let fullDateKey = `${year}-${monthStr}-${dayStr}`;
+            let numDiv = document.createElement('div');
+            numDiv.className = 'cal-date-num';
+            numDiv.innerText = day;
+            dayCell.appendChild(numDiv);
+            if(dailyData[fullDateKey]) {
+                let data = dailyData[fullDateKey];
+                let contentDiv = document.createElement('div');
+                contentDiv.className = 'cal-day-content ';
+                let sign = data.rr >= 0 ? '+' : '';
+                contentDiv.innerText = `${sign}${data.rr.toFixed(1)}R`;
+                if(data.result === 'WIN') contentDiv.classList.add('cal-win');
+                else if(data.result === 'LOSS') contentDiv.classList.add('cal-loss');
+                else contentDiv.classList.add('cal-be');
+                dayCell.appendChild(contentDiv);
+            }
+            grid.appendChild(dayCell);
+        }
+    }
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trades));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `scalp_vault_backup_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+    function importData(event) {
+        const fileReader = new FileReader();
+        if(event.target.files[0]) {
+            fileReader.readAsText(event.target.files[0], "UTF-8");
+            fileReader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if(Array.isArray(imported)) {
+                        trades = imported;
+                        localStorage.setItem('scalp_trades', JSON.stringify(trades));
+                        renderHistory();
+                        checkSessionShutdown();
+                        alert('Backup successfully loaded!');
+                    } else {
+                        alert('Invalid backup file format.');
+                    }
+                } catch(err) {
+                    alert('Error parsing JSON file.');
+                }
+            }
+        }
+    }
+</script>
+</body>
+</html>
